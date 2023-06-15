@@ -1,17 +1,19 @@
-type Res<Data = undefined, More = null> =
-    | {
-          success: true;
-          code: "success";
-          message: string;
-          data: Data;
-          RequestId: string;
-      }
-    | ({
-          success: false;
-          code: Exclude<string, "success">;
-          message: string;
-          RequestId: string;
-      } & More);
+type ResSuccess<T = undefined> = {
+    success: true;
+    code: "success";
+    message: string;
+    data: T;
+    RequestId: string;
+};
+
+type ResError<T = {}> = {
+    success: false;
+    code: Exclude<string, "success">;
+    message: string;
+    RequestId: string;
+} & T;
+
+type Res<T = undefined, U = {}> = ResSuccess<T> | ResError<U>;
 
 function buildForm(body: Record<string, string | Blob>) {
     const form = new FormData();
@@ -22,7 +24,7 @@ function buildForm(body: Record<string, string | Blob>) {
 /**
  * @param body if is `undefined`, send `GET` request, otherwise `POST`
  */
-async function request<T, U = null>(endpoint: string, body?: Record<string, string | Blob>, token?: string) {
+async function request<T = undefined, U = {}>(endpoint: string, body?: Record<string, string | Blob>, token?: string) {
     const API = "https://smms.app/api/v2/";
 
     const res = await fetch(API + (endpoint.startsWith("/") ? endpoint.slice(1) : endpoint), {
@@ -136,4 +138,54 @@ export function upload(token: string, smfile: Blob) {
         },
         { code: "image_repeated"; images: string }
     >("/upload", { smfile }, token);
+}
+
+export class SMMSError<T = {}> extends Error {
+    public readonly res: ResError<T>;
+    constructor(res: ResError<T>) {
+        super(res.message);
+        this.res = res;
+    }
+}
+
+export class SMMS {
+    #token: string;
+    constructor(token: string) {
+        this.#token = token;
+    }
+    static async login(username: string, password: string): Promise<SMMS> {
+        const res = await token(username, password);
+        if (!res.success) throw new Error(res.message);
+        return new this(res.data.token);
+    }
+    async profile() {
+        const res = await profile(this.#token);
+        if (!res.success) throw new SMMSError(res);
+        return res.data;
+    }
+    async clear() {
+        const res = await clear(this.#token);
+        if (!res.success) throw new SMMSError(res);
+        return res.data;
+    }
+    async history() {
+        const res = await history(this.#token);
+        if (!res.success) throw new SMMSError(res);
+        return res.data;
+    }
+    async uploadHistory() {
+        const res = await uploadHistory(this.#token);
+        if (!res.success) throw new SMMSError(res);
+        return res.data;
+    }
+    async delete(hash: string) {
+        const res = await deleteImage(this.#token, hash);
+        if (!res.success) throw new SMMSError(res);
+        return res.data;
+    }
+    async upload(smfile: Blob) {
+        const res = await upload(this.#token, smfile);
+        if (!res.success) throw new SMMSError(res);
+        return res.data;
+    }
 }
