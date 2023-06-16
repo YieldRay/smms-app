@@ -1,4 +1,5 @@
-import { upload, token, profile, history, uploadHistory, deleteImage } from "./smms.ts";
+import { createSMMS } from "./smms.ts";
+const { upload, token, profile, history, uploadHistory, delete: deleteImage } = createSMMS();
 
 const HOME = Deno.build.os === "windows" ? Deno.env.get("USERPROFILE")! : Deno.env.get("HOME")!;
 const CONF = `${HOME}/.smms-cli`;
