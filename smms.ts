@@ -21,13 +21,19 @@ function buildForm(body: Record<string, string | Blob>) {
     return form;
 }
 
+let _fetch = fetch;
+/**
+ * this function can modify the default http client (default is build in fetch)
+ */
+export const setFetch: (fetchFn: typeof fetch) => void = (fetchFn: typeof fetch) => (_fetch = fetchFn);
+
 /**
  * @param body if is `undefined`, send `GET` request, otherwise `POST`
  */
 async function request<T = undefined, U = {}>(endpoint: string, body?: Record<string, string | Blob>, token?: string) {
     const API = "https://smms.app/api/v2/";
 
-    const res = await fetch(API + (endpoint.startsWith("/") ? endpoint.slice(1) : endpoint), {
+    const res = await _fetch(API + (endpoint.startsWith("/") ? endpoint.slice(1) : endpoint), {
         method: body ? "POST" : "GET",
         headers: {
             authorization: token || "",
@@ -149,42 +155,43 @@ export class SMMSError<T = {}> extends Error {
 }
 
 export class SMMS {
-    #token: string;
+    public token: string;
     constructor(token: string) {
-        this.#token = token;
+        this.token = token;
     }
+
     static async login(username: string, password: string): Promise<SMMS> {
         const res = await token(username, password);
         if (!res.success) throw new SMMSError(res);
         return new this(res.data.token);
     }
     async profile() {
-        const res = await profile(this.#token);
+        const res = await profile(this.token);
         if (!res.success) throw new SMMSError(res);
         return res.data;
     }
     async clear() {
-        const res = await clear(this.#token);
+        const res = await clear(this.token);
         if (!res.success) throw new SMMSError(res);
         return res.data;
     }
     async history() {
-        const res = await history(this.#token);
+        const res = await history(this.token);
         if (!res.success) throw new SMMSError(res);
         return res.data;
     }
     async uploadHistory() {
-        const res = await uploadHistory(this.#token);
+        const res = await uploadHistory(this.token);
         if (!res.success) throw new SMMSError(res);
         return res.data;
     }
     async delete(hash: string) {
-        const res = await deleteImage(this.#token, hash);
+        const res = await deleteImage(this.token, hash);
         if (!res.success) throw new SMMSError(res);
         return res.data;
     }
     async upload(smfile: Blob) {
-        const res = await upload(this.#token, smfile);
+        const res = await upload(this.token, smfile);
         if (!res.success) throw new SMMSError(res);
         return res.data;
     }
