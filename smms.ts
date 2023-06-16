@@ -141,10 +141,10 @@ export function upload(token: string, smfile: Blob) {
 }
 
 export class SMMSError<T = {}> extends Error {
-    public readonly res: ResError<T>;
+    public readonly detail: ResError<T>;
     constructor(res: ResError<T>) {
         super(res.message);
-        this.res = res;
+        this.detail = res;
     }
 }
 
@@ -155,7 +155,7 @@ export class SMMS {
     }
     static async login(username: string, password: string): Promise<SMMS> {
         const res = await token(username, password);
-        if (!res.success) throw new Error(res.message);
+        if (!res.success) throw new SMMSError(res);
         return new this(res.data.token);
     }
     async profile() {
