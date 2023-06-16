@@ -16,18 +16,20 @@ try {
 }
 
 function help() {
-    console.log(`Usage: "${Deno.execPath()}" run "${new URL(import.meta.url).pathname}"
+    console.error(
+        `Usage: smms <command>
 
 COMMANDS:
     login <username> <password>  : login to cli, config file saved to ~/.smms-cli
     logout                       : logout from cli
-    upload <path>                : upload a image
+    upload <path>                : upload an image
     profile                      : show my profile
     history                      : ip based histoy
     clear                        : clear history
     list                         : show upload images by account
-    delete <hash>                : get the hash from 'list' subcommand, and delete from account
-    help                         : show this message`);
+    delete <hash>                : get hash from 'list' subcommand, and delete it from account
+    help                         : show this message`
+    );
     Deno.exit(0);
 }
 
@@ -93,6 +95,12 @@ switch (Deno.args[0]) {
             else console.log(x.message);
         }
         break;
-    default:
-        help();
+    case "help":
+        {
+            help();
+        }
+        break;
+    default: {
+        console.error(`smms: '${Deno.args[0]}' is not a command. See 'smms help'.`);
+    }
 }
