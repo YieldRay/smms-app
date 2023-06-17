@@ -1,3 +1,4 @@
+// deno-lint-ignore-file ban-types
 type ResSuccess<T = undefined> = {
     success: true;
     code: "success";
@@ -21,8 +22,8 @@ function buildForm(body: Record<string, string | Blob>) {
     return form;
 }
 
-export function createSMMS(fetchFn?: typeof fetch) {
-    const _fetch = fetchFn || fetch;
+export function createSMMS(fetchFn?: typeof globalThis.fetch) {
+    const fetch = fetchFn || globalThis.fetch;
 
     /**
      * @param body if is `undefined`, send `GET` request, otherwise `POST`
@@ -34,11 +35,9 @@ export function createSMMS(fetchFn?: typeof fetch) {
     ) {
         const API = "https://smms.app/api/v2/";
 
-        const res = await _fetch(API + (endpoint.startsWith("/") ? endpoint.slice(1) : endpoint), {
+        const res = await fetch(API + (endpoint.startsWith("/") ? endpoint.slice(1) : endpoint), {
             method: body ? "POST" : "GET",
-            headers: {
-                authorization: token || "",
-            },
+            headers: { authorization: token || "" },
             body: body ? buildForm(body) : undefined,
         });
         if (res.status === 413) {
@@ -172,7 +171,7 @@ export class SMMSError<T = {}> extends Error {
 export class SMMS {
     public token: string;
     private readonly _smms;
-    constructor(token: string = "", fetchFn?: typeof fetch) {
+    constructor(token: string = "", fetchFn?: typeof globalThis.fetch) {
         this.token = token;
         this._smms = createSMMS(fetchFn);
     }
