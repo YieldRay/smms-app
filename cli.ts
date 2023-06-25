@@ -16,6 +16,19 @@ try {
     await Deno.writeTextFile(CONF, "{}");
 }
 
+/**
+ * local path or remote url, to file
+ */
+async function pathToFile(path: string) {
+    const url = /^https?:\/\//.test(path) ? new URL(path) : new URL(`file://${await Deno.realPath(path)}`);
+    const res = await fetch(url);
+    const blob = await res.blob();
+    const fileName = decodeURIComponent(url.pathname.split("/").toReversed()[0]);
+    const type = res.headers.has("content-type") ? res.headers.get("content-type")! : undefined;
+    const file = new File([blob], fileName, { type });
+    return file;
+}
+
 function help() {
     console.error(
         `Usage: smms <command>
@@ -61,7 +74,7 @@ switch (Deno.args[0]) {
         {
             let [path] = Deno.args.slice(1);
             if (!path) path = prompt("Enter the image path:")!;
-            const f = await Deno.readFile(path);
+            const f = await pathToFile(path);
             const x = await upload(conf.token!, new File([f], path));
             if (x.success) console.log(x.data);
             else console.log(x.message);
