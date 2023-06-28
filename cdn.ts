@@ -1,3 +1,3 @@
 export { imageCDN, type ImageCDNOptions } from "./cdn/imagecdn.ts";
-export { wp, type PhotonOptions } from "./cdn/wp.ts";
-export { wsrv, type WrsvOptions } from "./cdn/wsrv.ts";
+export { type PhotonOptions, wp } from "./cdn/wp.ts";
+export { type WrsvOptions, wsrv } from "./cdn/wsrv.ts";

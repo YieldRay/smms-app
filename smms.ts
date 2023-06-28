@@ -1,4 +1,9 @@
+/**
+ * This module supports browser, node and deno
+ */
+
 // deno-lint-ignore-file ban-types
+
 type ResSuccess<T = undefined> = {
     success: true;
     code: "success";
@@ -22,8 +27,22 @@ function buildForm(body: Record<string, string | Blob>) {
     return form;
 }
 
-export function createSMMS(fetchFn?: typeof globalThis.fetch) {
-    const fetch = fetchFn || globalThis.fetch;
+export function createSMMS(
+    options?: Partial<{
+        /**
+         * initial token, can be overwritten by `$token` property
+         */
+        token: string;
+        /**
+         * custom `fetch` function for http request
+         */
+        fetch: typeof fetch;
+    }>
+) {
+    const fetch = options?.fetch ? options.fetch : globalThis.fetch;
+    const tokenRef = {
+        value: options?.token || "",
+    };
 
     /**
      * @param body if is `undefined`, send `GET` request, otherwise `POST`
@@ -56,7 +75,7 @@ export function createSMMS(fetchFn?: typeof globalThis.fetch) {
     /**
      * User - Get User Profile
      */
-    function profile(token: string) {
+    function profile() {
         return request<{
             username: string;
             email: string;
@@ -67,20 +86,20 @@ export function createSMMS(fetchFn?: typeof globalThis.fetch) {
             disk_limit: string;
             disk_usage_raw: number;
             disk_limit_raw: number;
-        }>("/profile", {}, token);
+        }>("/profile", {}, tokenRef.value);
     }
 
     /**
      * Image - Clear IP Based Temporary Upload History
      */
-    function clear(token: string) {
-        return request<[]>("/clear", undefined, token);
+    function clear() {
+        return request<[]>("/clear", undefined, tokenRef.value);
     }
 
     /**
      * Image - IP Based Temporary Upload History
      */
-    function history(token: string) {
+    function history() {
         return request<
             Array<{
                 width: number;
@@ -94,13 +113,13 @@ export function createSMMS(fetchFn?: typeof globalThis.fetch) {
                 delete: string;
                 page: string;
             }>
-        >("/history", undefined, token);
+        >("/history", undefined, tokenRef.value);
     }
 
     /**
      * Image - IP Based Temporary Upload History
      */
-    function uploadHistory(token: string) {
+    function uploadHistory() {
         return request<
             Array<{
                 width: number;
@@ -114,14 +133,14 @@ export function createSMMS(fetchFn?: typeof globalThis.fetch) {
                 delete: string;
                 page: string;
             }>
-        >("/upload_history", undefined, token);
+        >("/upload_history", undefined, tokenRef.value);
     }
 
     /**
      * Image - Image Deletion
      */
-    function deleteImage(token: string, hash: string) {
-        return request("/delete/" + hash, undefined, token);
+    function deleteImage(hash: string) {
+        return request("/delete/" + hash, undefined, tokenRef.value);
     }
 
     /**
@@ -130,7 +149,7 @@ export function createSMMS(fetchFn?: typeof globalThis.fetch) {
      * @example
      * upload("TOKEN", new File([await Deno.readFile("path/to/image.png")], "cut_dog.png"))
      */
-    function upload(token: string, smfile: Blob) {
+    function upload(smfile: Blob) {
         return request<
             {
                 file_id: number;
@@ -146,7 +165,7 @@ export function createSMMS(fetchFn?: typeof globalThis.fetch) {
                 page: string;
             },
             { code: "image_repeated"; images: string }
-        >("/upload", { smfile }, token);
+        >("/upload", { smfile }, tokenRef.value);
     }
 
     return {
@@ -157,6 +176,26 @@ export function createSMMS(fetchFn?: typeof globalThis.fetch) {
         uploadHistory,
         delete: deleteImage,
         upload,
+        /**
+         * shortcut for get token and set `$token` property
+         */
+        async $login(username: string, password: string) {
+            const res = await token(username, password);
+            if (res.success) {
+                tokenRef.value = res.data.token;
+            } else {
+                throw new SMMSError(res);
+            }
+        },
+        /**
+         * smms api token
+         */
+        get $token() {
+            return tokenRef.value;
+        },
+        set $token(token: string) {
+            tokenRef.value = token;
+        },
     };
 }
 
@@ -168,46 +207,50 @@ export class SMMSError<T = {}> extends Error {
     }
 }
 
+/**
+ * OOP style api, will throw `SMMSError` when response json is not success
+ */
 export class SMMS {
-    public token: string;
     private readonly _smms;
     constructor(token: string = "", fetchFn?: typeof globalThis.fetch) {
-        this.token = token;
-        this._smms = createSMMS(fetchFn);
+        this._smms = createSMMS({
+            token,
+            fetch: fetchFn,
+        });
     }
     async login(username: string, password: string) {
         const res = await this._smms.token(username, password);
         if (!res.success) throw new SMMSError(res);
-        this.token = res.data.token;
+        this._smms.$token = res.data.token;
         return res.data;
     }
     async profile() {
-        const res = await this._smms.profile(this.token);
+        const res = await this._smms.profile();
         if (!res.success) throw new SMMSError(res);
         return res.data;
     }
     async clear() {
-        const res = await this._smms.clear(this.token);
+        const res = await this._smms.clear();
         if (!res.success) throw new SMMSError(res);
         return res.data;
     }
     async history() {
-        const res = await this._smms.history(this.token);
+        const res = await this._smms.history();
         if (!res.success) throw new SMMSError(res);
         return res.data;
     }
     async uploadHistory() {
-        const res = await this._smms.uploadHistory(this.token);
+        const res = await this._smms.uploadHistory();
         if (!res.success) throw new SMMSError(res);
         return res.data;
     }
     async delete(hash: string) {
-        const res = await this._smms.delete(this.token, hash);
+        const res = await this._smms.delete(hash);
         if (!res.success) throw new SMMSError(res);
         return res.data;
     }
     async upload(smfile: Blob) {
-        const res = await this._smms.upload(this.token, smfile);
+        const res = await this._smms.upload(smfile);
         if (!res.success) throw new SMMSError(res);
         return res.data;
     }
