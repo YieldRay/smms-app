@@ -3,6 +3,7 @@
  */
 
 import { createSMMS, DEFAULT_ENDPOINT } from "./smms.ts";
+import * as cdnProvider from "./cdn.ts";
 
 const HOME = Deno.build.os === "windows" ? Deno.env.get("USERPROFILE")! : Deno.env.get("HOME")!;
 const CONF = `${HOME}/.smms-cli`;
@@ -47,12 +48,21 @@ async function upload(path: string) {
     return await smms.upload(file);
 }
 
+/**
+ * choose cdn, design for cli use
+ */
+export function cdnChoose(url: string | URL, name?: "wp" | "wsrv" | "imageCDN", jsonOptions?: string) {
+    const u = new URL(url);
+    if (!name) return u.href;
+    return cdnProvider[name](u, jsonOptions ? JSON.parse(jsonOptions) : undefined);
+}
+
 //! export
 export { smms, upload };
 
 //! command line
 if (import.meta.main) {
-    // const { parse } = await import("https://deno.land/std@0.192.0/flags/mod.ts");
+    const { parse } = await import("https://deno.land/std@0.192.0/flags/mod.ts");
 
     const help = () => {
         console.error(
@@ -147,20 +157,29 @@ COMMANDS:
             break;
         case "typora":
             {
+                const flags = parse(Deno.args.slice(1), { string: ["cdn", "options"] });
+                const paths = flags._.map(String);
+
                 const uploadOne = async (path: string) => {
                     const x = await upload(path);
                     if (x.success) return x.data.url;
                     else if (x.code === "image_repeated") return x.images!;
                     else throw new Error(x.message);
                 };
-                const paths = Deno.args.slice(1);
                 if (paths.length === 0) {
-                    console.log(`[How to use the typora compatible mode]
+                    console.log(`[How to configure the typora compatible mode]
 
 Typora > Preferences > Image > Image Upload Setting
 
 Image Uploader = Custom Command
-Command        = "smms typora"`);
+Command        = "smms typora"
+
+[Optional Image CDN Flags]
+
+cdn provider         :    --cdn=wp|wsrv|imageCDN
+cdn specific options :    --options=<json>
+
+Example: smms typora --cdn=wp --options="{\\"quality\\":100}" path/to/image.png`);
                     Deno.exit(0);
                 }
 
@@ -170,7 +189,7 @@ Command        = "smms typora"`);
                     try {
                         const url = await uploadOne(path);
                         successCount++;
-                        result.push(url);
+                        result.push(cdnChoose(url, flags.cdn as any, flags.options));
                     } catch (e) {
                         result.push(`<${e.message}>`);
                     }
