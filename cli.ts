@@ -69,6 +69,7 @@ COMMANDS:
     delete <hash>                : get hash from 'list' subcommand, and delete it from account
     typora <path>...             : upload image, in typora compatible mode
     endpoint <url>               : change endpoint, default is 'https://smms.app/api/v2/'
+    upgrade                      : upgrade to latest version
     help                         : show this message`
         );
         Deno.exit(0);
@@ -149,9 +150,8 @@ COMMANDS:
                 const uploadOne = async (path: string) => {
                     const x = await upload(path);
                     if (x.success) return x.data.url;
-                    else if (x.code === "image_repeated") return x.images;
-                    else return "";
-                    // return empty string, means upload fail
+                    else if (x.code === "image_repeated") return x.images!;
+                    else throw new Error(x.message);
                 };
                 const paths = Deno.args.slice(1);
                 if (paths.length === 0) {
@@ -163,15 +163,16 @@ Image Uploader = Custom Command
 Command        = "smms typora"`);
                     Deno.exit(0);
                 }
+
                 const result: string[] = [];
                 let successCount = 0;
                 for (const path of paths) {
-                    const url = await uploadOne(path);
-                    if (url) {
+                    try {
+                        const url = await uploadOne(path);
                         successCount++;
                         result.push(url);
-                    } else {
-                        result.push(`<fail to upload ${path}>`);
+                    } catch (e) {
+                        result.push(`<${e.message}>`);
                     }
                 }
                 if (successCount === paths.length) {
@@ -204,6 +205,25 @@ Command        = "smms typora"`);
                     );
                 }
             }
+            break;
+        case "upgrade":
+            {
+                const exec = (cmd: string) =>
+                    new Deno.Command(cmd.split(/\s+/)[0], {
+                        args: cmd.split(/\s+/).slice(1),
+                        stdin: "null",
+                        stdout: "inherit",
+                    }).output();
+
+                await exec(`deno cache -r https://denopkg.com/yieldray/smms-app/cli.ts`);
+
+                await exec(
+                    `deno install -f --allow-env --allow-read --allow-write --allow-net -n smms https://denopkg.com/yieldray/smms-app/cli.ts`
+                );
+
+                console.log("Done.");
+            }
+
             break;
         default: {
             console.error(`smms: '${Deno.args[0]}' is not a command. See 'smms help'.`);

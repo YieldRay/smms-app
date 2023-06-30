@@ -170,7 +170,7 @@ export function createSMMS(
                 delete: string;
                 page: string;
             },
-            { code: "image_repeated"; images: string }
+            { code: "image_repeated"; images: string } | { code: Exclude<string, "image_repeated">; images: undefined }
         >("/upload", { smfile }, tokenRef.value);
     }
 
