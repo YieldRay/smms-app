@@ -65,23 +65,23 @@ if (import.meta.main) {
     const { parse } = await import("https://deno.land/std@0.192.0/flags/mod.ts");
 
     const help = () => {
+        // prettier-ignore
         console.error(
-            `Usage: smms <command>
+`Usage: smms <command>
 
 COMMANDS:
     login <username> <password>  : login to cli, config file saved to ~/.smms-cli
     logout                       : logout from cli
     upload <path>...             : upload image
-    profile                      : show my profile
-    history                      : ip based histoy
-    clear                        : clear history
-    list                         : show upload images by account
-    delete <hash>                : get hash from 'list' subcommand, and delete it from account
     typora <path>...             : upload image, in typora compatible mode
+    profile                      : show profile
+    history                      : ip based history
+    clear                        : clear history
+    list                         : show uploaded images by account
+    delete <hash>                : get hash from 'list' subcommand, and delete it from account
     endpoint <url>               : change endpoint, default is 'https://smms.app/api/v2/'
     upgrade                      : upgrade to latest version
-    help                         : show this message`
-        );
+    help                         : show this message`);
         Deno.exit(0);
     };
 
@@ -167,7 +167,9 @@ COMMANDS:
                     else throw new Error(x.message);
                 };
                 if (paths.length === 0) {
-                    console.log(`[How to configure the typora compatible mode]
+                    // prettier-ignore
+                    console.log(
+`[How to configure the typora compatible mode]
 
 Typora > Preferences > Image > Image Upload Setting
 
@@ -242,7 +244,6 @@ Example: smms typora --cdn=wp --options="{\\"quality\\":100}" path/to/image.png`
 
                 console.log("Done.");
             }
-
             break;
         default: {
             console.error(`smms: '${Deno.args[0]}' is not a command. See 'smms help'.`);
