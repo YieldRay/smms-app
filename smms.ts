@@ -27,6 +27,8 @@ function buildForm(body: Record<string, string | Blob>) {
     return form;
 }
 
+export const DEFAULT_ENDPOINT = "https://smms.app/api/v2/";
+
 export function createSMMS(
     options?: Partial<{
         /**
@@ -37,12 +39,15 @@ export function createSMMS(
          * custom `fetch` function for http request
          */
         fetch: typeof fetch;
+        /**
+         * API endpoint, default value is:
+         * https://smms.app/api/v2/
+         */
+        endpoint?: string;
     }>
 ) {
     const fetch = options?.fetch ? options.fetch : globalThis.fetch;
-    const tokenRef = {
-        value: options?.token || "",
-    };
+    const tokenRef = { value: options?.token || "" };
 
     /**
      * @param body if is `undefined`, send `GET` request, otherwise `POST`
@@ -52,13 +57,14 @@ export function createSMMS(
         body?: Record<string, string | Blob>,
         token?: string
     ) {
-        const API = "https://smms.app/api/v2/";
+        const API = options?.endpoint || DEFAULT_ENDPOINT;
 
         const res = await fetch(API + (endpoint.startsWith("/") ? endpoint.slice(1) : endpoint), {
             method: body ? "POST" : "GET",
             headers: { authorization: token || "" },
             body: body ? buildForm(body) : undefined,
         });
+
         if (res.status === 413) {
             // Request Entity Too Large
             throw new Error("Request Entity Too Large");
