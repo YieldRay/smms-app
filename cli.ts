@@ -5,22 +5,39 @@
 import { createSMMS, DEFAULT_ENDPOINT } from "./smms.ts";
 import * as cdnProvider from "./cdn.ts";
 
-const HOME = Deno.build.os === "windows" ? Deno.env.get("USERPROFILE")! : Deno.env.get("HOME")!;
-const CONF = `${HOME}/.smms-cli`;
+const HOME =
+    Deno.env.get("XDG_CONFIG_HOME") ??
+    (Deno.build.os === "windows" ? Deno.env.get("USERPROFILE")! : Deno.env.get("HOME")!);
+const CONFIG_DIR = `${HOME}/.config/smms-app`;
+const CONFIG_FILE = `${CONFIG_DIR}/config.json`;
 const conf: Partial<{ token: string; endpoint: string }> = { endpoint: DEFAULT_ENDPOINT };
 
 try {
     // read config file
-    const f = await Deno.readTextFile(CONF);
-    Object.assign(conf, JSON.parse(f));
+    Object.assign(conf, JSON.parse(await Deno.readTextFile(CONFIG_FILE)));
 } catch (err) {
-    if (!(err instanceof Deno.errors.NotFound)) {
-        throw err;
+    if (!(err instanceof Deno.errors.NotFound)) throw err;
+    // if config file just not exists, create one
+    try {
+        const { isDirectory } = await Deno.stat(CONFIG_DIR);
+        if (!isDirectory) {
+            console.error(`Configuration path "${CONFIG_DIR}" should be a directory!`);
+            Deno.exit(1);
+        }
+    } catch (e) {
+        if (e instanceof Deno.errors.NotFound) {
+            await Deno.mkdir(CONFIG_DIR, { recursive: true });
+        } else {
+            console.error(e);
+            Deno.exit(1);
+        }
     }
-    await Deno.writeTextFile(CONF, "{}");
+    // make sure parent directory exists
+    await Deno.writeTextFile(CONFIG_FILE, "{}");
 }
 
-const assignAndSaveConf = (obj: typeof conf) => Deno.writeTextFile(CONF, JSON.stringify(Object.assign(conf, obj)));
+const assignAndSaveConf = (obj: typeof conf) =>
+    Deno.writeTextFile(CONFIG_FILE, JSON.stringify(Object.assign(conf, obj), null, 4));
 
 /**
  * the smms instance with config file read
@@ -62,7 +79,7 @@ export { smms, upload };
 
 //! command line
 if (import.meta.main) {
-    const { parse } = await import("https://deno.land/std@0.192.0/flags/mod.ts");
+    const { parse } = await import("https://deno.land/std@0.197.0/flags/mod.ts");
 
     const help = () => {
         // prettier-ignore
@@ -229,18 +246,13 @@ Example: smms typora --cdn=wp --options="{\\"quality\\":100}" path/to/image.png`
             break;
         case "upgrade":
             {
-                const exec = (cmd: string) =>
-                    new Deno.Command(cmd.split(/\s+/)[0], {
-                        args: cmd.split(/\s+/).slice(1),
-                        stdin: "null",
-                        stdout: "inherit",
-                    }).output();
-
-                await exec(`deno cache -r https://denopkg.com/yieldray/smms-app/cli.ts`);
-
-                await exec(
-                    `deno install -f --allow-env --allow-read --allow-write --allow-net --allow-run -n smms https://denopkg.com/yieldray/smms-app/cli.ts`
-                );
+                await new Deno.Command("deno", {
+                    args: "install --allow-env --allow-read --allow-write --allow-net --allow-run -f -n smms https://denopkg.com/yieldray/smms-app/cli.ts".split(
+                        /\s+/
+                    ),
+                    stdin: "null",
+                    stdout: "inherit",
+                }).output();
 
                 console.log("Done.");
             }
