@@ -6,8 +6,8 @@ import { createSMMS, DEFAULT_ENDPOINT } from "./smms.ts";
 import * as cdnProvider from "./cdn.ts";
 
 const HOME =
-    Deno.env.get("XDG_CONFIG_HOME") ??
-    (Deno.build.os === "windows" ? Deno.env.get("USERPROFILE")! : Deno.env.get("HOME")!);
+    Deno.env.get("XDG_CONFIG_HOME") ||
+    (Deno.build.os === "windows" ? Deno.env.get("USERPROFILE") : Deno.env.get("HOME"))!;
 const CONFIG_DIR = `${HOME}/.config/smms-app`;
 const CONFIG_FILE = `${CONFIG_DIR}/config.json`;
 const conf: Partial<{ token: string; endpoint: string }> = { endpoint: DEFAULT_ENDPOINT };
@@ -79,7 +79,7 @@ export { smms, upload };
 
 //! command line
 if (import.meta.main) {
-    const { parse } = await import("https://deno.land/std@0.197.0/flags/mod.ts");
+    const { parse } = await import("https://deno.land/std/flags/mod.ts");
 
     const help = () => {
         // prettier-ignore
@@ -247,7 +247,7 @@ Example: smms typora --cdn=wp --options="{\\"quality\\":100}" path/to/image.png`
         case "upgrade":
             {
                 await new Deno.Command("deno", {
-                    args: "install --allow-env --allow-read --allow-write --allow-net --allow-run -f -n smms https://denopkg.com/yieldray/smms-app/cli.ts".split(
+                    args: "install --allow-env --allow-read --allow-write --allow-net --allow-run -r -f -n smms https://denopkg.com/yieldray/smms-app/cli.ts".split(
                         /\s+/
                     ),
                     stdin: "null",

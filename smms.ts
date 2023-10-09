@@ -29,23 +29,21 @@ function buildForm(body: Record<string, string | Blob>) {
 
 export const DEFAULT_ENDPOINT = "https://smms.app/api/v2/";
 
-export function createSMMS(
-    options?: Partial<{
-        /**
-         * initial token, can be overwritten by `$token` property
-         */
-        token: string;
-        /**
-         * custom `fetch` function for http request
-         */
-        fetch: typeof fetch;
-        /**
-         * API endpoint, default value is:
-         * https://smms.app/api/v2/
-         */
-        endpoint?: string;
-    }>
-) {
+export function createSMMS(options?: {
+    /**
+     * initial token, can be overwritten by `$token` property
+     */
+    token?: string;
+    /**
+     * custom `fetch` function for http request
+     */
+    fetch?: typeof fetch;
+    /**
+     * API endpoint, default value is:
+     * https://smms.app/api/v2/
+     */
+    endpoint?: string;
+}) {
     const fetch = options?.fetch ? options.fetch : globalThis.fetch;
     const tokenRef = { value: options?.token || "" };
 
