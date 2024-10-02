@@ -1,6 +1,6 @@
 # smms-app
 
-[sm.ms](https://smms.app) api and command line written in Deno
+A [sm.ms](https://smms.app) API and CLI written in Deno.
 
 ```sh
 # install or upgrade
@@ -13,5 +13,5 @@ deno uninstall smms
 deno install -Afgr -n smms ./cli.ts
 ```
 
-to use as a module, import `./smms.ts`, see docs
-[here](https://doc.deno.land/https://denopkg.com/yieldray/smms-app@master/smms.ts)
+To use this as a module, import `./smms.ts`. See the documentation
+[here](https://doc.deno.land/https://denopkg.com/yieldray/smms-app@master/smms.ts).

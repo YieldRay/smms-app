@@ -5,8 +5,7 @@
 import { createSMMS, DEFAULT_ENDPOINT } from "./smms.ts";
 import * as cdnProvider from "./cdn.ts";
 
-const HOME =
-  Deno.env.get("XDG_CONFIG_HOME") ||
+const HOME = Deno.env.get("XDG_CONFIG_HOME") ||
   (Deno.build.os === "windows"
     ? Deno.env.get("USERPROFILE")
     : Deno.env.get("HOME"))!;
@@ -26,7 +25,7 @@ try {
     const { isDirectory } = await Deno.stat(CONFIG_DIR);
     if (!isDirectory) {
       console.error(
-        `Configuration path "${CONFIG_DIR}" should be a directory!`
+        `Configuration path "${CONFIG_DIR}" should be a directory!`,
       );
       Deno.exit(1);
     }
@@ -45,7 +44,7 @@ try {
 const assignAndSaveConf = (obj: typeof conf) =>
   Deno.writeTextFile(
     CONFIG_FILE,
-    JSON.stringify(Object.assign(conf, obj), null, 4)
+    JSON.stringify(Object.assign(conf, obj), null, 4),
   );
 
 /**
@@ -84,13 +83,13 @@ async function upload(path: string) {
 export function cdnChoose(
   url: string | URL,
   name?: "wp" | "wsrv" | "imageCDN",
-  jsonOptions?: string
+  jsonOptions?: string,
 ) {
   const u = new URL(url);
   if (!name) return u.href;
   return cdnProvider[name](
     u,
-    jsonOptions ? JSON.parse(jsonOptions) : undefined
+    jsonOptions ? JSON.parse(jsonOptions) : undefined,
   );
 }
 
@@ -102,8 +101,7 @@ if (import.meta.main) {
   const { parse } = await import("https://deno.land/std/flags/mod.ts");
 
   const help = () => {
-    // prettier-ignore
-    console.error(
+    console.log(
       `Usage: smms <command>
 
 COMMANDS:
@@ -238,13 +236,13 @@ Example: smms typora --cdn=wp --options="{\\"quality\\":100}" path/to/image.png`
         if (successCount === paths.length) {
           console.log(
             "%cUpload Success:",
-            "text-decoration: underline; font-weight: bold"
+            "text-decoration: underline; font-weight: bold",
           );
           console.log(result.join("\n"));
         } else {
           console.error(
             `%cUpload Fail (${successCount}/${paths.length}):`,
-            "text-decoration: underline; font-weight: bold; color: red"
+            "text-decoration: underline; font-weight: bold; color: red",
           );
           console.error(result.join("\n"));
         }
@@ -264,7 +262,7 @@ Example: smms typora --cdn=wp --options="{\\"quality\\":100}" path/to/image.png`
               `\n` +
               `Default endpoint is ${DEFAULT_ENDPOINT}` +
               `\n` +
-              `Current endpoint is ${conf.endpoint}`
+              `Current endpoint is ${conf.endpoint}`,
           );
         }
       }
@@ -272,9 +270,11 @@ Example: smms typora --cdn=wp --options="{\\"quality\\":100}" path/to/image.png`
     case "upgrade":
       {
         await new Deno.Command("deno", {
-          args: "install --allow-env --allow-read --allow-write --allow-net --allow-run -r -f -n smms https://denopkg.com/yieldray/smms-app/cli.ts".split(
-            /\s+/
-          ),
+          args:
+            "install --allow-env --allow-read --allow-write --allow-net --allow-run -fgr -n smms https://denopkg.com/yieldray/smms-app/cli.ts"
+              .split(
+                /\s+/,
+              ),
           stdin: "null",
           stdout: "inherit",
         }).output();
@@ -284,7 +284,7 @@ Example: smms typora --cdn=wp --options="{\\"quality\\":100}" path/to/image.png`
       break;
     default: {
       console.error(
-        `smms: '${Deno.args[0]}' is not a command. See 'smms help'.`
+        `smms: '${Deno.args[0]}' is not a command. See 'smms help'.`,
       );
     }
   }
